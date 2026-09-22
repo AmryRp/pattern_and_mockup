@@ -1,4 +1,23 @@
 export const SIZE = 1024;
+export const blendModes = {
+  Normal: 'source-over',
+  Multiply: 'multiply',
+  Screen: 'screen',
+  Overlay: 'overlay',
+  Darken: 'darken',
+  Lighten: 'lighten',
+  'Color dodge': 'color-dodge',
+  'Color burn': 'color-burn',
+  'Hard light': 'hard-light',
+  'Soft light': 'soft-light',
+  Difference: 'difference',
+  Exclusion: 'exclusion',
+  Hue: 'hue',
+  Saturation: 'saturation',
+  Color: 'color',
+  Luminosity: 'luminosity',
+} as const satisfies Record<string, GlobalCompositeOperation>;
+export type BlendMode = keyof typeof blendModes;
 export type Layer = {
   id: string;
   name: string;
@@ -9,6 +28,8 @@ export type Layer = {
   height: number;
   rotation: number;
   color: string;
+  recolor?: boolean;
+  blendMode?: BlendMode;
   opacity: number;
   visible: boolean;
   locked: boolean;
@@ -21,6 +42,29 @@ export type Pattern = {
   transparent: boolean;
 };
 export const wrap = (n: number, size = SIZE) => ((n % size) + size) % size;
+// Keep only the latest recolor per source image; source pixels stay untouched.
+const recoloredImages = new WeakMap<
+  HTMLImageElement,
+  {
+    color: string;
+    canvas: HTMLCanvasElement;
+  }
+>();
+function recolorImage(image: HTMLImageElement, color: string) {
+  const cached = recoloredImages.get(image);
+  if (cached?.color === color) return cached.canvas;
+  const canvas = cached?.canvas ?? document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(image, 0, 0);
+  ctx.globalCompositeOperation = 'source-in';
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.globalCompositeOperation = 'source-over';
+  recoloredImages.set(image, { color, canvas });
+  return canvas;
+}
 export function copies(layer: Layer) {
   const radius = Math.hypot(layer.width, layer.height) / 2;
   const result: { x: number; y: number }[] = [];
@@ -54,17 +98,20 @@ export function drawPattern(
   }
   for (const layer of pattern.layers) {
     if (!layer.visible) continue;
+    const source = layer.src ? images.get(layer.src) : undefined;
+    const image =
+      source && layer.recolor ? recolorImage(source, layer.color) : source;
     for (const position of copies(layer)) {
       ctx.save();
       ctx.translate(position.x, position.y);
       ctx.rotate((layer.rotation * Math.PI) / 180);
       ctx.globalAlpha = layer.opacity;
+      ctx.globalCompositeOperation = blendModes[layer.blendMode ?? 'Normal'];
       ctx.fillStyle = layer.color;
       ctx.strokeStyle = layer.color;
       const { width: w, height: h } = layer;
       if (layer.kind === 'image' && layer.src) {
-        const img = images.get(layer.src);
-        if (img) ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        if (image) ctx.drawImage(image, -w / 2, -h / 2, w, h);
       } else if (layer.kind === 'square') ctx.fillRect(-w / 2, -h / 2, w, h);
       else {
         ctx.beginPath();

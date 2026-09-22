@@ -51,6 +51,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   copies,
+  blendModes,
   drawPattern,
   hitLayer,
   initialPattern,
@@ -59,6 +60,7 @@ import {
   wrap,
   type Layer,
   type Pattern,
+  type BlendMode,
 } from '@/lib/pattern';
 import ModelPreview, {
   type Mapping,
@@ -112,14 +114,20 @@ function Picker({
   onChange,
   items,
   label,
+  disabled,
 }: {
   value: string;
   onChange: (v: string) => void;
   items: string[];
   label: string;
+  disabled?: boolean;
 }) {
   return (
-    <Select value={value} onValueChange={(v) => v && onChange(v)}>
+    <Select
+      value={value}
+      disabled={disabled}
+      onValueChange={(v) => v && onChange(v)}
+    >
       <SelectTrigger aria-label={label}>
         <SelectValue>{value}</SelectValue>
       </SelectTrigger>
@@ -152,6 +160,7 @@ function IconButton({
 }
 
 export default function Studio() {
+  const [mobilePanel, setMobilePanel] = useState('pattern');
   const [pattern, setPattern] = useState<Pattern>(initialPattern),
     patternRef = useRef(pattern);
   useEffect(() => {
@@ -364,6 +373,7 @@ export default function Studio() {
     };
     commit((p) => ({ ...p, layers: [...p.layers, item] }));
     setSelected(item.id);
+    setMobilePanel('pattern');
   }
   function duplicate() {
     if (!layer) return;
@@ -451,6 +461,7 @@ export default function Studio() {
     if (imported.length) {
       commit((p) => ({ ...p, layers: [...p.layers, ...imported] }));
       setSelected(imported[imported.length - 1].id);
+      setMobilePanel('pattern');
       setVersion((v) => v + 1);
     }
     setBusy('');
@@ -470,6 +481,7 @@ export default function Studio() {
     try {
       if (!preview.current) throw new Error('The 3D preview is not ready.');
       await preview.current.load(file);
+      setMobilePanel('preview');
     } catch (e) {
       setNotice(
         `Could not load model: ${e instanceof Error ? e.message : 'Invalid file.'} Compressed GLB files should be exported without Draco or KTX2 compression.`,
@@ -623,6 +635,7 @@ export default function Studio() {
   return (
     <main
       className="studio"
+      data-mobile-panel={mobilePanel}
       onDragOver={(e) => {
         e.preventDefault();
         if (e.dataTransfer.types.includes('Files')) setDragging(true);
@@ -689,6 +702,23 @@ export default function Studio() {
           </button>
         </div>
       </header>
+      <Tabs
+        className="workspace-switcher"
+        value={mobilePanel}
+        onValueChange={(value) => setMobilePanel(String(value))}
+      >
+        <TabsList aria-label="Workspace view">
+          <TabsTrigger value="layers">
+            <Layers size={15} /> Layers
+          </TabsTrigger>
+          <TabsTrigger value="pattern">
+            <Grid2X2 size={15} /> Pattern
+          </TabsTrigger>
+          <TabsTrigger value="preview">
+            <Box size={15} /> Preview
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="workspace">
         <aside className="layers-panel">
           <div className="panel-heading">
@@ -734,7 +764,10 @@ export default function Studio() {
               >
                 <button
                   className="layer-select"
-                  onClick={() => setSelected(item.id)}
+                  onClick={() => {
+                    setSelected(item.id);
+                    setMobilePanel('pattern');
+                  }}
                 >
                   <span
                     className={`layer-thumb ${item.kind}`}
@@ -1014,19 +1047,28 @@ export default function Studio() {
                 <Picker
                   label="Preview model"
                   value={
-                    ['Cylinder', 'Sphere', 'Cube', 'Torus'].includes(info.name)
+                    ['Cylinder', 'Sphere', 'Cube', 'Torus', 'Plane'].includes(
+                      info.name,
+                    )
                       ? info.name
                       : 'Custom model'
                   }
-                  onChange={(v) => preview.current?.preset(v)}
+                  onChange={(v) => {
+                    if (v !== 'Custom model') preview.current?.preset(v);
+                  }}
                   items={[
                     'Cylinder',
                     'Sphere',
                     'Cube',
                     'Torus',
-                    ...(!['Cylinder', 'Sphere', 'Cube', 'Torus'].includes(
-                      info.name,
-                    )
+                    'Plane',
+                    ...(![
+                      'Cylinder',
+                      'Sphere',
+                      'Cube',
+                      'Torus',
+                      'Plane',
+                    ].includes(info.name)
                       ? ['Custom model']
                       : []),
                   ]}
@@ -1089,6 +1131,9 @@ export default function Studio() {
                   <TabsTrigger value="mapping">
                     <Box size={15} />
                     UV & material
+                  </TabsTrigger>
+                  <TabsTrigger value="image" disabled={layer?.kind !== 'image'}>
+                    <WandSparkles size={15} /> Background
                   </TabsTrigger>
                 </TabsList>
                 <span className="subtle">
@@ -1154,19 +1199,31 @@ export default function Studio() {
                     </div>
                     <div className="property-block">
                       <div className="section-label">
-                        APPEARANCE{' '}
+                        COLOR & OPACITY{' '}
                         <span>{Math.round(layer.opacity * 100)}%</span>
                       </div>
                       <div className="appearance-controls">
-                        {layer.kind !== 'image' && (
+                        <label className="layer-color-control">
                           <input
-                            aria-label="Shape color"
+                            aria-label="Layer color"
                             type="color"
                             value={layer.color}
                             disabled={layer.locked}
                             onChange={(e) =>
-                              patchLayer({ color: e.target.value })
+                              patchLayer({
+                                color: e.target.value,
+                                recolor: true,
+                              })
                             }
+                          />
+                          <span>Color</span>
+                        </label>
+                        {layer.kind === 'image' && (
+                          <Switch
+                            aria-label="Recolor image"
+                            checked={!!layer.recolor}
+                            disabled={layer.locked}
+                            onCheckedChange={(v) => patchLayer({ recolor: v })}
                           />
                         )}
                         <Slider
@@ -1182,6 +1239,25 @@ export default function Studio() {
                           }
                         />
                       </div>
+                      <div className="blend-control">
+                        <span>Blend</span>
+                        <Picker
+                          label="Layer blend mode"
+                          value={layer.blendMode ?? 'Normal'}
+                          disabled={layer.locked}
+                          items={Object.keys(blendModes)}
+                          onChange={(v) =>
+                            patchLayer({ blendMode: v as BlendMode })
+                          }
+                        />
+                      </div>
+                      {layer.kind === 'image' && (
+                        <p className="recolor-hint">
+                          {layer.recolor
+                            ? 'Solid color · original alpha retained'
+                            : 'Original colors · choose a color to recolor'}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -1190,7 +1266,14 @@ export default function Studio() {
                     Select a layer to adjust its position, scale and appearance.
                   </div>
                 )}
-                {layer?.kind === 'image' && (
+                {layer?.locked && (
+                  <p className="locked-notice">
+                    <LockKeyhole size={14} /> Unlock this layer to edit.
+                  </p>
+                )}
+              </TabsContent>
+              <TabsContent value="image">
+                {layer?.kind === 'image' ? (
                   <div className="background-tools">
                     <WandSparkles size={18} />
                     <div>
@@ -1222,12 +1305,10 @@ export default function Studio() {
                       <RotateCcw size={17} />
                     </IconButton>
                   </div>
-                )}
-                {layer?.locked && (
-                  <p className="locked-notice">
-                    <LockKeyhole size={14} />
-                    This layer is locked. Unlock it in the layers panel to edit.
-                  </p>
+                ) : (
+                  <div className="inspector-empty">
+                    Select an image layer to remove its background.
+                  </div>
                 )}
               </TabsContent>
               <TabsContent value="mapping">

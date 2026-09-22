@@ -63,6 +63,14 @@ function release(object: THREE.Object3D) {
   });
   textures.forEach((t) => t.dispose());
 }
+function resetCamera(e: Engine) {
+  e.controls.target.set(0, 0, 0);
+  if (e.name === 'Plane') e.camera.position.set(0, 0, 6.5);
+  else e.camera.position.set(4.6, 3, 5.8);
+  e.camera.position.multiplyScalar(1 / Math.min(e.camera.aspect, 1));
+  e.root.rotation.set(0, 0, 0);
+  e.controls.update();
+}
 const ModelPreview = forwardRef<
   PreviewHandle,
   {
@@ -166,22 +174,22 @@ const ModelPreview = forwardRef<
     e.root.rotation.set(0, 0, 0);
     e.format = format;
     e.name = name;
-    e.controls.target.set(0, 0, 0);
-    e.camera.position.set(4.6, 3, 5.8);
-    e.controls.update();
+    resetCamera(e);
     updateMapping();
     callbacks.current.onInfo({ name, format, meshes, missing });
   }
   function preset(name: string) {
     generation.current++;
     const g =
-      name === 'Sphere'
-        ? new THREE.SphereGeometry(1.3, 64, 48)
-        : name === 'Cube'
-          ? new THREE.BoxGeometry(2.2, 2.2, 2.2)
-          : name === 'Torus'
-            ? new THREE.TorusGeometry(1, 0.42, 40, 100)
-            : new THREE.CylinderGeometry(0.95, 0.95, 2.65, 96, 1, false);
+      name === 'Plane'
+        ? new THREE.PlaneGeometry(3, 3)
+        : name === 'Sphere'
+          ? new THREE.SphereGeometry(1.3, 64, 48)
+          : name === 'Cube'
+            ? new THREE.BoxGeometry(2.2, 2.2, 2.2)
+            : name === 'Torus'
+              ? new THREE.TorusGeometry(1, 0.42, 40, 100)
+              : new THREE.CylinderGeometry(0.95, 0.95, 2.65, 96, 1, false);
     apply(
       new THREE.Mesh(g, new THREE.MeshStandardMaterial()),
       name,
@@ -212,10 +220,7 @@ const ModelPreview = forwardRef<
     reset() {
       const e = engine.current;
       if (!e) return;
-      e.camera.position.set(4.6, 3, 5.8);
-      e.controls.target.set(0, 0, 0);
-      e.root.rotation.set(0, 0, 0);
-      e.controls.update();
+      resetCamera(e);
     },
     refresh() {
       engine.current?.textures.forEach((t) => (t.needsUpdate = true));
@@ -295,7 +300,7 @@ const ModelPreview = forwardRef<
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.minDistance = 2;
-    controls.maxDistance = 15;
+    controls.maxDistance = 40;
     scene.add(new THREE.HemisphereLight('#ffffff', '#929cab', 2.5));
     const key = new THREE.DirectionalLight('#ffffff', 4);
     key.position.set(4, 7, 5);
@@ -331,7 +336,15 @@ const ModelPreview = forwardRef<
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       if (!width || !height) return;
+      const previousAspect = camera.aspect;
       camera.aspect = width / height;
+      // Preserve the orbit and zoom while keeping narrow previews framed.
+      camera.position
+        .sub(controls.target)
+        .multiplyScalar(
+          Math.min(previousAspect, 1) / Math.min(camera.aspect, 1),
+        )
+        .add(controls.target);
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
     });

@@ -44,6 +44,10 @@ For local development with the same framework, use `npm run dev:vercel`.
 
 ## Use
 
+- The workspace fits the viewport. Long layer lists and properties scroll inside their panels; on smaller screens, switch between **Layers**, **Pattern**, and **Preview**.
+- Select a layer and use **Layer properties → Color** to change a shape's fill or recolor an image while preserving its transparency. Turn off the image recolor switch to restore its original colors. **Blend** offers Normal, Multiply, Screen, Overlay, and other modes; opacity, blending, and recoloring also apply to repeat previews and exported PNGs. These edits support undo/redo.
+- Choose **Plane** in the preview model menu for a front-facing flat surface. Orbit, zoom, texture repeat, and UV transforms work on the plane too; **Reset camera** returns it to the front view.
+- Image background removal is under the **Background** tab.
 - Drag PNG, JPG, WebP, AVIF or GIF images into the workspace, or select **Add your artwork**. Images become independent layers; GIF imports use a single frame. Images are resized to a maximum of 2048 pixels to keep editing responsive.
 - Move layers on the canvas. Corner handles scale proportionally; the round handle rotates. Hold Shift to snap rotation to 15 degrees. Numeric fields support independent width/height and exact position/rotation.
 - Use the layer panel for stacking, duplication, visibility and locking. Arrow keys move a selected layer by 1 pixel, or 10 with Shift. Ctrl/Cmd+Z undoes; Ctrl/Cmd+Shift+Z redoes.
