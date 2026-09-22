@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "\u003e=22.13.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
+    "dev:vercel": "next dev",
+    "build:vercel": "next build",
+    "start:vercel": "next start",
     "lint": "oxlint",
     "format": "oxfmt",
     "check": "tsc --noEmit",
@@ -24,6 +27,7 @@
     "embla-carousel-react": "8.5.2",
     "input-otp": "1.4.2",
     "lucide-react": "1.31.0",
+    "next": "16.3.6",
     "react": "19.2.6",
     "react-day-picker": "9.8.1",
     "react-dom": "19.2.6",

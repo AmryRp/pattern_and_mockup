@@ -13,6 +13,35 @@ npm run dev
 
 On Windows PowerShell with script execution disabled, use `npm.cmd`.
 
+## Deploy to Vercel
+
+The default `dev`, `build`, and `start` scripts use Vinext and Cloudflare Workers
+for Sites. That Worker output cannot be served directly by Vercel.
+
+Vercel uses the native Next.js build configured in `vercel.json`:
+
+- Root Directory: the repository directory containing `package.json` and `vercel.json`.
+- Framework Preset: **Next.js**.
+- Build Command: `npm run build:vercel`.
+- Output Directory: `.next-vercel` (isolated from Vinext's generated route types).
+- Install Command: the default npm install command.
+- Node.js: **22.x** or newer.
+
+Commit and push the deployment configuration, dependency manifest, and lockfile,
+then redeploy in Vercel. If an older deployment still returns `404 NOT_FOUND`,
+redeploy without the existing build cache and verify the domain points to the
+new deployment. Do not use `dist`, `dist/client`, or `public` as Vercel's output
+directory; they do not contain the native Next.js deployment.
+
+To verify the Vercel build locally:
+
+```sh
+npm run build:vercel
+npm run start:vercel
+```
+
+For local development with the same framework, use `npm run dev:vercel`.
+
 ## Use
 
 - Drag PNG, JPG, WebP, AVIF or GIF images into the workspace, or select **Add your artwork**. Images become independent layers; GIF imports use a single frame. Images are resized to a maximum of 2048 pixels to keep editing responsive.
