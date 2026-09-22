@@ -1,4 +1,4 @@
-# Tileform
+# AtoZTileform
 
 A local-first seamless pattern editor with an interactive Three.js model preview.
 

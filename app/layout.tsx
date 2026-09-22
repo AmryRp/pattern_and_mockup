@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Tileform - Seamless Pattern Studio',
+  title: 'AtoZTileform - Seamless Pattern Studio',
   description:
     'Create layered seamless patterns with live UV-mapped 3D previews.',
 };

@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff,
   Grid2X2,
+  Grid3x3,
   ImagePlus,
   Layers,
   LockKeyhole,
@@ -676,11 +677,11 @@ export default function Studio() {
         }}
       />
       <header className="app-header">
-        <Link className="brand" href="/" aria-label="Tileform home">
+        <Link className="brand" href="/" aria-label="AtoZTileform home">
           <span className="brand-mark">
-            <Grid2X2 size={23} />
+            <Grid3x3 size={23} />
           </span>
-          tileform<span className="brand-dot">®</span>
+          AtoZTileform<span className="brand-dot">®</span>
         </Link>
         <span className="header-divider" />
         <span className="project-title">
@@ -712,7 +713,7 @@ export default function Studio() {
             <Layers size={15} /> Layers
           </TabsTrigger>
           <TabsTrigger value="pattern">
-            <Grid2X2 size={15} /> Pattern
+            <Grid3x3 size={15} /> Pattern
           </TabsTrigger>
           <TabsTrigger value="preview">
             <Box size={15} /> Preview
@@ -932,7 +933,7 @@ export default function Studio() {
                   className={`repeat-toggle ${repeatView ? 'active' : ''}`}
                   onClick={() => setRepeatView((v) => !v)}
                 >
-                  <Grid2X2 size={15} />
+                  <Grid3x3 size={15} />
                   {repeatView ? 'Edit single tile' : 'Check repeat'}
                 </button>
               </div>
@@ -1433,7 +1434,7 @@ export default function Studio() {
           export up to 4K
         </span>
         <span>
-          TILEFORM STUDIO <span className="footer-divider">/</span> 01
+          ATOZTILEFORM STUDIO <span className="footer-divider">/</span> 01
         </span>
       </footer>
       {notice && (
